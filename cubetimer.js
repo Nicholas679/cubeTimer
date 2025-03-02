@@ -173,6 +173,7 @@ const drprune = generatePruneTable(drMask,[0,1,2,3,4,5,8,9,10,11,14,15,16,17],dr
 const eoPruneDepth = 6;
 const eoPrune = generatePruneTable(eoMask,moveNumbers,eoPruneDepth);
 const htrStart = generatePruneTable(htrMask,[2,5,8,11,14,17],4);//find all starting positions
+
 const htrStartPositions = htrStart[4];// this line and following loop combines htrStart[3] and htrStart[4] which gives all start positions
 for (let i of htrStart[3]){
     htrStartPositions.add(i);
@@ -276,15 +277,13 @@ function removeRedundantMoves(moves){
                 i = i-1;    
             }
         }
-        previous = Math.floor(moves[i]/3);
-            
-        
+        previous = Math.floor(moves[i]/3);      
     }
     return moves
-
 }
+
+document.getElementById("scrambleButton").addEventListener("click", newScramble);//listen for button click
 function newScramble(){
-    document.getElementById("scramble").textContent = "loading";
     const newScrambleState = new cube(structuredClone(solvedState));
     newScrambleState.state = generateRandomState(); //get random state
     let solution = solveCube(newScrambleState.state,drprune,drpruneDepth,finishPrune, finishPruneDepth);//call solver
@@ -295,5 +294,85 @@ function newScramble(){
         scrambleNotation= scrambleNotation+moveLetters[i]+" ";//output result
     }
     document.getElementById("scramble").textContent = scrambleNotation;
-    console.log(scramble.length)
+}
+function convertTime(time){
+    let out = "";
+    if (time>=60000){// check if minutes need to be displayed
+        out = out + String(Math.floor(time/60000))+":";//add number of minutes to output
+        time = time%60000;//remove minutes that have been added from the time
+    }
+    out = out + String(Math.floor(time/1000))+".";//add number of seconds
+    time = time%1000;// remove the number of seconds from total time
+    out = out +String(time);// add number of miliseconds
+    return out;
+}
+class cubeTimer{
+    constructor(){
+        this.timeList = [];
+        this.start = 0;
+    }
+    startTimer(){
+        this.start = Date.now()// record start time
+    }
+    stopTimer(){
+        this.timeList.push(Date.now()-this.start)//calcualte and record solve time
+
+    }
+}
+newScramble();// generate a scramble when page loads
+var inspectionTime = -1;
+var displayTime = -1;
+var inspection = false;
+var timing = false;
+const timer = new cubeTimer()
+document.body.addEventListener('click',clickEvent);//listen for any click on page
+function clickEvent(event){
+    if (event.target.id != "scrambleButton"){ //ignore click if it is on button 
+        if (inspection == false && timing == false){//start inspection if neither timer or inspection are running
+            inspection = true;
+            inspectionTimer();
+        }
+        else if (timing == false){ // end inspection and star timer if inspection is running
+            timer.startTimer();
+            document.body.style.backgroundColor = "white";
+            inspection=false;
+            inspectionTime = -1;
+            timing = true;
+            displayTimer();
+        }
+        else{//stop timer when timer is running and make a new scramble
+            timer.stopTimer();
+            document.getElementById("timer").textContent = convertTime(timer.timeList[timer.timeList.length-1])
+            timing = false;
+            displayTime = -1;
+            newScramble();
+        
+        }
+    }
+}
+
+function inspectionTimer(){
+    if (inspectionTime <15 && inspection){//check if inspection is still ongoing
+        inspectionTime++;//increment timer
+        document.getElementById("timer").textContent = String(inspectionTime)+" inspecting";
+        if (inspectionTime == 8){//change background colour to give user an 8 second warining
+            document.body.style.backgroundColor= "green";
+        }
+        else if (inspectionTime ==12){ // change background colour to give user a 12 second warining
+            document.body.style.backgroundColor = "red";
+        }
+        if (inspectionTime <15 && inspection){//if inspection is still ongoing then call function again in a second
+            setTimeout(inspectionTimer,1000); 
+        }
+    }
+    else{
+        document.body.style.backgroundColor = "white";//reset background colour once inspection is finished
+    }
+}
+function displayTimer(){
+    if (timing){
+        displayTime++; //incriment timer
+        document.getElementById("timer").textContent = String(displayTime) +" solving"; // update text
+        setTimeout(displayTimer,1000);//call function again in one second
+    }
 }
