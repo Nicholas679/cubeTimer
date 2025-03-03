@@ -295,16 +295,22 @@ function newScramble(){
     }
     document.getElementById("scramble").textContent = scrambleNotation;
 }
-function convertTime(time){
+function convertTime(result){
     let out = "";
-    if (time>=60000){// check if minutes need to be displayed
-        out = out + String(Math.floor(time/60000))+":";//add number of minutes to output
-        time = time%60000;//remove minutes that have been added from the time
+    if (result[2]){
+        return "DNF"
     }
-    out = out + String(Math.floor(time/1000))+".";//add number of seconds
-    time = time%1000;// remove the number of seconds from total time
-    out = out +String(time);// add number of miliseconds
-    return out;
+    else{
+        let time = result[0]
+        if (time>=60000){// check if minutes need to be displayed
+            out = out + String(Math.floor(time/60000))+":";//add number of minutes to output
+            time = time%60000;//remove minutes that have been added from the time
+        }
+        out = out + String(Math.floor(time/1000))+".";//add number of seconds
+        time = time%1000;// remove the number of seconds from total time
+        out = out +String(time);// add number of miliseconds
+        return out;
+    }
 }
 class cubeTimer{
     constructor(){
@@ -315,8 +321,26 @@ class cubeTimer{
         this.start = Date.now()// record start time
     }
     stopTimer(){
-        this.timeList.push(Date.now()-this.start)//calcualte and record solve time
+        this.timeList.push([Date.now()-this.start,false,false])//calcualte and record solve time
 
+    }
+    plusTwo(){
+        if (this.timeList[this.timeList.length-1][1] == false){//if penalty is not on result add penalty
+            this.timeList[this.timeList.length-1][1] =true;
+            this.timeList[this.timeList.length-1][0] =this.timeList[this.timeList.length-1][0]+2000;
+        }
+        else{ // if penalty is on result remove it
+            this.timeList[this.timeList.length-1][1] =false;
+            this.timeList[this.timeList.length-1][0] =this.timeList[this.timeList.length-1][0]-2000;
+        }
+    }
+    dnf(){
+        if (this.timeList[this.timeList.length-1][2]== false){//set dnf to true if not already
+            this.timeList[this.timeList.length-1][2]= true;
+        }
+        else{//set dnf to false if it is true
+            this.timeList[this.timeList.length-1][2]= false;
+        }
     }
 }
 newScramble();// generate a scramble when page loads
@@ -324,10 +348,12 @@ var inspectionTime = -1;
 var displayTime = -1;
 var inspection = false;
 var timing = false;
+var inspectionPlusTwo = false;
+var inspectionDnf = false;
 const timer = new cubeTimer()
 document.body.addEventListener('click',clickEvent);//listen for any click on page
 function clickEvent(event){
-    if (event.target.id != "scrambleButton"){ //ignore click if it is on button 
+    if (!["scrambleButton", "+2","DNF"].includes(event.target.id)){ //ignore click if it is on button 
         if (inspection == false && timing == false){//start inspection if neither timer or inspection are running
             inspection = true;
             inspectionTimer();
@@ -342,17 +368,41 @@ function clickEvent(event){
         }
         else{//stop timer when timer is running and make a new scramble
             timer.stopTimer();
-            document.getElementById("timer").textContent = convertTime(timer.timeList[timer.timeList.length-1])
+            if (inspectionPlusTwo){//add inspection +2 if requierd
+                timer.timeList[timer.timeList.length-1][0]=timer.timeList[timer.timeList.length-1][0]+2000;
+                inspectionPlusTwo = false;
+            }
+            if (inspectionDnf){//check for inspection dnf and apply penalty if needed
+                inspectionDnf =false;
+                timer.dnf();
+            }
+            document.getElementById("timer").textContent = convertTime(timer.timeList[timer.timeList.length-1]);
             timing = false;
             displayTime = -1;
+            var table = document.getElementById("results");//add new result to table
+            var row = table.insertRow(1);
+            var cell = row.insertCell(0);
+            cell.textContent = convertTime(timer.timeList[timer.timeList.length-1]);
+            var cell1 = row.insertCell(1);//get cells for average
+            var cell2 = row.insertCell(2);
+            var cell3 = row.insertCell(3);
+            var cell4 = row.insertCell(4);
+            var cell5 = row.insertCell(5);
+            cell1.textContent = calculateAverage(timer.timeList.slice(-5),1,5);//caculate each average and write in cell
+            cell2.textContent = calculateAverage(timer.timeList.slice(-12),1,12);
+            cell3.textContent = calculateAverage(timer.timeList.slice(-25),2,25);
+            cell4.textContent = calculateAverage(timer.timeList.slice(-50),3,50);
+            cell5.textContent = calculateAverage(timer.timeList.slice(-100),5,100);
+        
             newScramble();
+
         
         }
     }
 }
 
 function inspectionTimer(){
-    if (inspectionTime <15 && inspection){//check if inspection is still ongoing
+    if (inspectionTime <17 && inspection){//check if inspection is still ongoing
         inspectionTime++;//increment timer
         document.getElementById("timer").textContent = String(inspectionTime)+" inspecting";
         if (inspectionTime == 8){//change background colour to give user an 8 second warining
@@ -361,18 +411,81 @@ function inspectionTimer(){
         else if (inspectionTime ==12){ // change background colour to give user a 12 second warining
             document.body.style.backgroundColor = "red";
         }
-        if (inspectionTime <15 && inspection){//if inspection is still ongoing then call function again in a second
-            setTimeout(inspectionTimer,1000); 
+        else if (inspectionTime==15){
+            inspectionPlusTwo = true;
         }
+        
+        setTimeout(inspectionTimer,1000); 
+        
     }
     else{
+        if (inspectionTime == 17){
+            inspectionDnf = true;
+            inspectionPlusTwo=false;
+        }
         document.body.style.backgroundColor = "white";//reset background colour once inspection is finished
     }
 }
 function displayTimer(){
     if (timing){
-        displayTime++; //incriment timer
+        displayTime++; //increment timer
         document.getElementById("timer").textContent = String(displayTime) +" solving"; // update text
         setTimeout(displayTimer,1000);//call function again in one second
     }
 }
+document.getElementById("+2").addEventListener("click",applyPlusTwo);
+function applyPlusTwo(){
+    timer.plusTwo();
+    document.getElementById("timer").textContent = convertTime(timer.timeList[timer.timeList.length-1]);
+    updateTable();
+}
+document.getElementById("DNF").addEventListener("click",applyDnf);//listen for dnf button press
+function applyDnf(){ // add dnf penalty
+    timer.dnf();
+    document.getElementById("timer").textContent = convertTime(timer.timeList[timer.timeList.length-1]);
+    updateTable();
+}
+function updateTable(){
+    var table = document.getElementById("results");//get table
+    var row = table.getElementsByTagName("tr")[1];//get top row
+    var cell = row.getElementsByTagName("td")[0];//get cell
+    cell.textContent = convertTime(timer.timeList[timer.timeList.length-1]);//update time
+    var cell1 = row.getElementsByTagName("td")[1];
+    var cell2 = row.getElementsByTagName("td")[2];
+    var cell3 = row.getElementsByTagName("td")[3];
+    var cell4 = row.getElementsByTagName("td")[4];
+    var cell5 = row.getElementsByTagName("td")[5];
+    cell1.textContent = calculateAverage(timer.timeList.slice(-5),1,5);
+    cell2.textContent = calculateAverage(timer.timeList.slice(-12),1,12);
+    cell3.textContent = calculateAverage(timer.timeList.slice(-25),2,25);
+    cell4.textContent = calculateAverage(timer.timeList.slice(-50),3,50);
+    cell5.textContent = calculateAverage(timer.timeList.slice(-100),5,100);
+}
+function calculateAverage(times,remove,size){
+    if (timer.timeList.length >=size){//check that there are enough results for average size
+        var numbers = []
+        let dnfCount = 0;
+        for (let i of times){
+            if (i[2]){//if result is dnf add very large number so it will be removed for being the largest number
+                numbers.push(99999999999);
+                dnfCount++;
+            }
+            else{
+                numbers.push(i[0]);
+            }
+        }
+        if (dnfCount > remove){//check that there are not too many dnf results for an average
+            return "DNF";
+        }
+        numbers.sort(function(a,b){return a-b});//sort array of numbers
+        let total = 0;
+        for (let i=remove;i<(size-remove);i++){
+            total = total +numbers[i];
+        }
+        return convertTime([Math.round(total/(size-(2*remove))),false,false]);
+    }
+    else{
+        return "-";
+    }
+}
+
