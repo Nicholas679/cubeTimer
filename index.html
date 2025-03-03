@@ -1,13 +1,30 @@
 <!DOCTYPE html>
 <html>
     <head>
-        
+        <link rel="stylesheet" href="timer.css">
     </head>
     <body>
         <h2 id="scramble">loading</h2>
-        <button id="scrambleButton">new scramble</button>
+        <button id="scrambleButton" style="font-size: large;">new scramble</button>
         <h1 style="text-align: center;" id="timer">0 </h1>
-        <canvas id="cubeImage" width ="400" height = "400"></canvas>
+        <div>
+        <br><br><br>
+        <button id="+2" style="font-size: large;">+2</button>
+        <button id="DNF" style="font-size: large;">DNF</button>
+        </div>
+        <div style="height:200px;width:400px;border:1px;overflow:auto;display: inline-block;">
+            <table id="results">
+                
+                <th scope="col">Time</th>
+                <th scope="col">ao5</th>
+                <th scope="col">ao12</th>
+                <th scope="col">ao25</th>
+                <th scope="col">ao50</th>
+                <th scope="col">ao100</th>
+                
+            </table>
+        </div>    
+        <canvas style="display: inline-block;"id="cubeImage" width ="200" height = "200"></canvas>
         <script src="cubetimer.js"></script>
 
     </body>
