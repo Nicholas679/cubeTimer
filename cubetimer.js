@@ -283,13 +283,14 @@ function removeRedundantMoves(moves){
 }
 
 document.getElementById("scrambleButton").addEventListener("click", newScramble);//listen for button click
+var scrambleNotation = ""
 function newScramble(){
     const newScrambleState = new cube(structuredClone(solvedState));
     newScrambleState.state = generateRandomState(); //get random state
     let solution = solveCube(newScrambleState.state,drprune,drpruneDepth,finishPrune, finishPruneDepth);//call solver
     let scramble = removeRedundantMoves(reverseMoves(solution)); //reverse solution for scramble
     displayFromMoves(scramble); //display state
-    let scrambleNotation = ""
+    scrambleNotation = ""
     for (let i of scramble){
         scrambleNotation= scrambleNotation+moveLetters[i]+" ";//output result
     }
@@ -321,7 +322,7 @@ class cubeTimer{
         this.start = Date.now()// record start time
     }
     stopTimer(){
-        this.timeList.push([Date.now()-this.start,false,false])//calcualte and record solve time
+        this.timeList.push([Date.now()-this.start,false,false,String(scrambleNotation)])//calcualte and record solve time
 
     }
     plusTwo(){
@@ -342,6 +343,9 @@ class cubeTimer{
             this.timeList[this.timeList.length-1][2]= false;
         }
     }
+    delete(){
+        this.timeList.pop()//delete most recent time
+    }
 }
 newScramble();// generate a scramble when page loads
 var inspectionTime = -1;
@@ -352,8 +356,25 @@ var inspectionPlusTwo = false;
 var inspectionDnf = false;
 const timer = new cubeTimer()
 document.body.addEventListener('click',clickEvent);//listen for any click on page
+function checkEvent(event){//check if event is click outside of buttons and table
+    if (inputMode != "timer"){
+        return false
+    }
+    if (event.target.closest("div")!=null){
+        if (event.target.closest("div").id == "resultsTable"){
+            return false
+        }
+    }
+    if ((["scrambleButton", "+2","DNF","Delete","reset","inputMode"].includes(event.target.id))){
+        return false
+    }
+    
+        
+    return true
+    
+}
 function clickEvent(event){
-    if (!["scrambleButton", "+2","DNF"].includes(event.target.id)){ //ignore click if it is on button 
+    if (checkEvent(event)){ //ignore click if it is on a button 
         if (inspection == false && timing == false){//start inspection if neither timer or inspection are running
             inspection = true;
             inspectionTimer();
@@ -381,6 +402,7 @@ function clickEvent(event){
             displayTime = -1;
             var table = document.getElementById("results");//add new result to table
             var row = table.insertRow(1);
+            row.id = scrambleNotation;//save scramble as row id
             var cell = row.insertCell(0);
             cell.textContent = convertTime(timer.timeList[timer.timeList.length-1]);
             var cell1 = row.insertCell(1);//get cells for average
@@ -393,10 +415,7 @@ function clickEvent(event){
             cell3.textContent = calculateAverage(timer.timeList.slice(-25),2,25);
             cell4.textContent = calculateAverage(timer.timeList.slice(-50),3,50);
             cell5.textContent = calculateAverage(timer.timeList.slice(-100),5,100);
-        
-            newScramble();
-
-        
+            newScramble();      
         }
     }
 }
@@ -462,7 +481,7 @@ function updateTable(){
     cell5.textContent = calculateAverage(timer.timeList.slice(-100),5,100);
 }
 function calculateAverage(times,remove,size){
-    if (timer.timeList.length >=size){//check that there are enough results for average size
+    if (times.length >=size){//check that there are enough results for average size
         var numbers = []
         let dnfCount = 0;
         for (let i of times){
@@ -488,4 +507,64 @@ function calculateAverage(times,remove,size){
         return "-";
     }
 }
-
+document.getElementById("Delete").addEventListener("click",deleteSolve);//listen for delete button press
+function deleteSolve(){ // delete most recent solve
+    if (confirm("Are you sure you want to delete this solve")){ //check that the user actually intended to press the button
+        timer.delete();//remove from list of times
+        var table = document.getElementById("results");
+        table.deleteRow(1);// delete the result from the table
+    }
+}
+document.getElementById("results").addEventListener('click',viewScramble);//listen for clicks on table
+function viewScramble(event){
+    alert(event.target.closest("tr").id); // find which row is clicked and give alert containg the id which is the scramble
+}
+window.addEventListener('beforeunload', saveData);// call function to save data when page is closed
+function saveData(){
+    localStorage.setItem("storedResults",JSON.stringify(timer.timeList));// save data
+}
+let included = [];
+for (let i of JSON.parse(localStorage.getItem("storedResults"))){//load saved results and run loop adding each result to table
+    included.push(i); //has previously added results so that average can be calculated for each row
+    var table = document.getElementById("results");//add new result to table
+    var row = table.insertRow(1);
+    row.id = i[3];//save scramble as row id
+    var cell = row.insertCell(0);
+    cell.textContent = convertTime(included[included.length-1]);
+    var cell1 = row.insertCell(1);//get cells for average
+    var cell2 = row.insertCell(2);
+    var cell3 = row.insertCell(3);
+    var cell4 = row.insertCell(4);
+    var cell5 = row.insertCell(5);
+    cell1.textContent = calculateAverage(included.slice(-5),1,5);//caculate each average and write in cell
+    cell2.textContent = calculateAverage(included.slice(-12),1,12);
+    cell3.textContent = calculateAverage(included.slice(-25),2,25);
+    cell4.textContent = calculateAverage(included.slice(-50),3,50);
+    cell5.textContent = calculateAverage(included.slice(-100),5,100);
+}
+timer.timeList = included;//add the loaded data to list of times in timer object
+document.getElementById("reset").addEventListener("click",resetTimes); //listens for reset button press
+function resetTimes(){
+    if (confirm("Are you sure you want to delete all saved times")){//check that the user intended to reset all times
+        timer.timeList = []; //empty list of times
+        location.reload();//refresh webpage so changes can take effect
+    }
+}
+document.getElementById("timeInputBox").hidden = true; //initially hid the text input box
+var inputMode = "timer";//set input mode to be timer when the page is first loaded
+document.getElementById("inputMode").addEventListener("click",changeMode);
+function changeMode(){
+    if (inputMode == "timer"){//change input mode to typing
+        document.getElementById("timer").hidden = true; //hide timer
+        document.getElementById("timeInputBox").hidden = false;//show text input box
+        inputMode = "typing"
+        document.getElementById("inputMode").textContent = "timer input"
+    }
+    else{ //change input mode to timer
+        document.getElementById("timeInputBox").hidden = true;//hide text input
+        document.getElementById("timer").hidden = false;//show timer
+        inputMode = "timer";
+        document.getElementById("inputMode").textContent= "typing input";
+        
+    }
+}
