@@ -198,17 +198,57 @@ function reverseMoves(moves){//returns the sequence of moves which would undo th
     }
     return reversed;
 }
+var scrambleMode = "full";//set initial scramble mode to full
 function generateRandomState(){
-    const edgePieces = [[1,37],[5,28],[1,37],[3,10],[21,14],[23,30],[39,32],[41,12],[46,25],[50,34],[52,43],[48,16]];
-    const edgeLocations = [[1,37],[5,28],[7,19],[3,10],[21,14],[23,30],[39,32],[41,12],[46,25],[50,34],[52,43],[48,16]];
-    const cornerPieces = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42],[51,44,15],[45,17,24]];
-    const cornerLocations = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42],[51,44,15],[45,17,24]];
-    const emptyCube = [0,0,0,0,4,0,0,0,0,0,0,0,0,13,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,0,0,31,0,0,0,0,0,0,0,0,40,0,0,0,0,0,0,0,0,49,0,0,0,0];
+    //intialize variables
+    var edgePieces = [];//edge pieces to be placed
+    var edgeLocations = [];//location of edge pieces
+    var cornerPieces = [];//corner pieces to be placed
+    var cornerLocations = [];//locations of corner pieces
+    var cornerNumber = 0;//number of corner pieces to place
+    var emptyCube = [];//empty cube state with solved pieces included if necessary 
+    var edgeNumber =0;//number of edge pieces to place
+    if (scrambleMode == "full"){//set variables if scramble mode is full
+        edgePieces = [[1,37],[5,28],[1,37],[3,10],[21,14],[23,30],[39,32],[41,12],[46,25],[50,34],[52,43],[48,16]];
+        edgeLocations = [[1,37],[5,28],[7,19],[3,10],[21,14],[23,30],[39,32],[41,12],[46,25],[50,34],[52,43],[48,16]];
+        cornerPieces = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42],[51,44,15],[45,17,24]];
+        cornerLocations = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42],[51,44,15],[45,17,24]];
+        emptyCube = [0,0,0,0,4,0,0,0,0,0,0,0,0,13,0,0,0,0,0,0,0,0,22,0,0,0,0,0,0,0,0,31,0,0,0,0,0,0,0,0,40,0,0,0,0,0,0,0,0,49,0,0,0,0];
+        edgeNumber = 12;
+        cornerNumber = 8;
+    }
+    else if (scrambleMode == "solvedFB"){//set varaibles if scramble mode is solvedFb
+        edgePieces = [[1,37],[5,28],[1,37],[3,10],[23,30],[39,32],[46,25],[50,34],[52,43]];
+        edgeLocations = [[1,37],[5,28],[7,19],[3,10],[23,30],[39,32],[46,25],[50,34],[52,43]];
+        cornerPieces = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42]];
+        cornerLocations = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42]];
+        emptyCube = [0,0,0,0,4,0,0,0,0,0,0,0,12,13,14,15,16,17,0,0,0,21,22,0,24,0,0,0,0,0,0,31,0,0,0,0,0,0,0,0,40,41,0,0,44,45,0,0,48,49,0,51,0,0];
+        edgeNumber = 9;
+        cornerNumber = 6;
+    }
+    else if (scrambleMode == "solvedCross"){//set variables if scramble mode is solved cross
+        edgePieces = [[1,37],[5,28],[1,37],[3,10],[21,14],[23,30],[39,32],[41,12]];
+        edgeLocations = [[1,37],[5,28],[7,19],[3,10],[21,14],[23,30],[39,32],[41,12]];
+        cornerPieces = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42],[51,44,15],[45,17,24]];
+        cornerLocations = [[0,9,38],[2,36,29],[8,27,20],[6,18,11],[47,26,33],[53,35,42],[51,44,15],[45,17,24]];
+        emptyCube = [0,0,0,0,4,0,0,0,0,0,0,0,0,13,0,0,16,0,0,0,0,0,22,0,0,25,0,0,0,0,0,31,0,0,34,0,0,0,0,0,40,0,0,43,0,0,46,0,48,49,50,0,52,0];
+        edgeNumber = 8;
+        cornerNumber = 8;
+    }
+    else if (scrambleMode == "L10p"){//set vairables if scramble mode is L10p
+        edgePieces = [[1,37],[5,28],[1,37],[3,10],[46,25],[52,43]];
+        edgeLocations = [[1,37],[5,28],[7,19],[3,10],[46,25],[52,43]];
+        cornerPieces = [[0,9,38],[2,36,29],[8,27,20],[6,18,11]];
+        cornerLocations = [[0,9,38],[2,36,29],[8,27,20],[6,18,11]];
+        emptyCube = [0,0,0,0,4,0,0,0,0,0,0,0,12,13,14,15,16,17,0,0,0,21,22,23,24,0,26,0,0,0,30,31,32,33,34,35,0,0,0,39,40,41,42,0,44,45,0,47,48,49,50,51,0,53];
+        edgeNumber = 6;
+        cornerNumber = 4;
+    }
     let edgeOrientationTotal = 0
     var orientation = 0
-    for (let i =0;i<12;i++){//place each edge piece
-        let location = Math.floor(Math.random()*(12-i));//choose location to place edge
-        if (i<11){
+    for (let i =0;i<edgeNumber;i++){//place each edge piece
+        let location = Math.floor(Math.random()*(edgeNumber-i));//choose location to place edge
+        if (i<edgeNumber-1){
             orientation = Math.floor(Math.random()*2);//choose the orientation of the edge
             edgeOrientationTotal = edgeOrientationTotal+orientation
             }
@@ -228,9 +268,9 @@ function generateRandomState(){
     }
     let cornerOrientationTotal = 0
     var orientation = 0
-    for (let i =0;i<8;i++){ //place all corner pieces
-        let location = Math.floor(Math.random()*(8-i));// choose random location
-        if (i<7){
+    for (let i =0;i<cornerNumber;i++){ //place all corner pieces
+        let location = Math.floor(Math.random()*(cornerNumber-i));// choose random location
+        if (i<cornerNumber-1){
             orientation = Math.floor(Math.random()*3); //choose random orientation
             cornerOrientationTotal = cornerOrientationTotal+orientation
         }
@@ -298,18 +338,18 @@ function newScramble(){
 }
 function convertTime(result){
     let out = "";
-    if (result[2]){
-        return "DNF"
+    if (result[2]){//check if result is DNF
+        return "DNF";
     }
-    else{
-        let time = result[0]
+    else{ 
+        let time = result[0];
+        decimal= String(time).slice(-3);//get decimal part of time
         if (time>=60000){// check if minutes need to be displayed
             out = out + String(Math.floor(time/60000))+":";//add number of minutes to output
             time = time%60000;//remove minutes that have been added from the time
         }
-        out = out + String(Math.floor(time/1000))+".";//add number of seconds
-        time = time%1000;// remove the number of seconds from total time
-        out = out +String(time);// add number of miliseconds
+        out = out + String(Math.floor(time/1000))+".";//add number of seconds 
+        out = out +decimal;// add decimal part
         return out;
     }
 }
@@ -365,7 +405,7 @@ function checkEvent(event){//check if event is click outside of buttons and tabl
             return false
         }
     }
-    if ((["scrambleButton", "+2","DNF","Delete","reset","inputMode"].includes(event.target.id))){
+    if ((["scrambleButton", "+2","DNF","Delete","reset","inputMode","scrambleType","solvedCross","full","solvedFB","L10p"].includes(event.target.id))){
         return false
     }
     
@@ -400,21 +440,7 @@ function clickEvent(event){
             document.getElementById("timer").textContent = convertTime(timer.timeList[timer.timeList.length-1]);
             timing = false;
             displayTime = -1;
-            var table = document.getElementById("results");//add new result to table
-            var row = table.insertRow(1);
-            row.id = scrambleNotation;//save scramble as row id
-            var cell = row.insertCell(0);
-            cell.textContent = convertTime(timer.timeList[timer.timeList.length-1]);
-            var cell1 = row.insertCell(1);//get cells for average
-            var cell2 = row.insertCell(2);
-            var cell3 = row.insertCell(3);
-            var cell4 = row.insertCell(4);
-            var cell5 = row.insertCell(5);
-            cell1.textContent = calculateAverage(timer.timeList.slice(-5),1,5);//caculate each average and write in cell
-            cell2.textContent = calculateAverage(timer.timeList.slice(-12),1,12);
-            cell3.textContent = calculateAverage(timer.timeList.slice(-25),2,25);
-            cell4.textContent = calculateAverage(timer.timeList.slice(-50),3,50);
-            cell5.textContent = calculateAverage(timer.timeList.slice(-100),5,100);
+            addToTable();
             newScramble();      
         }
     }
@@ -568,3 +594,64 @@ function changeMode(){
         
     }
 }
+function addToTable(){
+    var table = document.getElementById("results");//add new result to table
+    var row = table.insertRow(1);
+    row.id = scrambleNotation;//save scramble as row id
+    var cell = row.insertCell(0);
+    cell.textContent = convertTime(timer.timeList[timer.timeList.length-1]);
+    var cell1 = row.insertCell(1);//get cells for average
+    var cell2 = row.insertCell(2);
+    var cell3 = row.insertCell(3);
+    var cell4 = row.insertCell(4);
+    var cell5 = row.insertCell(5);
+    cell1.textContent = calculateAverage(timer.timeList.slice(-5),1,5);//caculate each average and write in cell
+    cell2.textContent = calculateAverage(timer.timeList.slice(-12),1,12);
+    cell3.textContent = calculateAverage(timer.timeList.slice(-25),2,25);
+    cell4.textContent = calculateAverage(timer.timeList.slice(-50),3,50);
+    cell5.textContent = calculateAverage(timer.timeList.slice(-100),5,100);
+    
+}
+
+const textInputBox = document.getElementById("timeInputBox");
+textInputBox.addEventListener("keyup",inputTime);
+function inputTime(event){
+    if (event.key == "Enter"){
+        let dataIn = textInputBox.value;
+        dataIn = dataIn.replace(":","");
+        dataIn = dataIn.replace(".","");
+        dataIn = Number(dataIn); // convert to number
+        if (dataIn != NaN){ // check if input is number
+            // the last two digits will be fractions of a second. The 2 digits before these will be seconds
+            // any digits before will be miuntes since this is what will be displayed on a timer
+            // I want to conver this milliseconds since this is what is used throughout the program
+            let hundredths = dataIn%100;
+            let seconds = (dataIn%10000 -hundredths) /100;
+            let minutes = (dataIn - 100*seconds - hundredths)/10000;
+            let milliseconds = 10*hundredths + 1000*seconds + 60000*minutes;
+            console.log(hundredths,seconds,minutes)
+            timer.timeList.push([milliseconds,false,false,String(scrambleNotation)]);//record time
+            addToTable();//add ressult to table
+            textInputBox.value = "";//empty input box
+        
+        }
+
+
+    }
+}
+document.getElementById("scrambleType").addEventListener("click",displayMenu);
+function displayMenu(){
+    const menu = document.getElementById("srambleTypeList")//get list
+    if (menu.hidden == true){ //show menu if it is hidden
+        menu.hidden = false;
+    }
+    else{ //hide menu if it is displayed
+        menu.hidden = true;
+   }
+}
+
+//changes scramble mode, generates new scramble and hides menu when new scramble mode is selected
+document.getElementById("full").addEventListener("click",function(event){scrambleMode="full";displayMenu();newScramble()});
+document.getElementById("solvedFB").addEventListener("click",function(){scrambleMode="solvedFB";displayMenu();newScramble()});
+document.getElementById("L10p").addEventListener("click",function(){scrambleMode="L10p";displayMenu();newScramble()});
+document.getElementById("solvedCross").addEventListener("click",function(){scrambleMode="solvedCross";displayMenu();newScramble()});
