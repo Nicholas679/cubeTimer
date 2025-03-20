@@ -1,4 +1,3 @@
-
 const colours = ["white","orange","green","red","blue","yellow"];
 function drawSide(state,startPos,sideLength,ctx){ //This function draws each individual face 
 
@@ -343,7 +342,8 @@ function convertTime(result){
     }
     else{ 
         let time = result[0];
-        decimal= String(time).slice(-3);//get decimal part of time
+        decimal=("000" +String(time)).slice(-3);//get decimal part of time
+        
         if (time>=60000){// check if minutes need to be displayed
             out = out + String(Math.floor(time/60000))+":";//add number of minutes to output
             time = time%60000;//remove minutes that have been added from the time
@@ -387,6 +387,7 @@ class cubeTimer{
         this.timeList.pop()//delete most recent time
     }
 }
+
 newScramble();// generate a scramble when page loads
 var inspectionTime = -1;
 var displayTime = -1;
@@ -618,10 +619,10 @@ textInputBox.addEventListener("keyup",inputTime);
 function inputTime(event){
     if (event.key == "Enter"){
         let dataIn = textInputBox.value;
-        dataIn = dataIn.replace(":","");
-        dataIn = dataIn.replace(".","");
+        dataIn = dataIn.replaceAll(":","");
+        dataIn = dataIn.replaceAll(".","");
         dataIn = Number(dataIn); // convert to number
-        if (dataIn != NaN){ // check if input is number
+        if (!isNaN(dataIn)){ // check if input is number
             // the last two digits will be fractions of a second. The 2 digits before these will be seconds
             // any digits before will be miuntes since this is what will be displayed on a timer
             // I want to conver this milliseconds since this is what is used throughout the program
@@ -629,10 +630,10 @@ function inputTime(event){
             let seconds = (dataIn%10000 -hundredths) /100;
             let minutes = (dataIn - 100*seconds - hundredths)/10000;
             let milliseconds = 10*hundredths + 1000*seconds + 60000*minutes;
-            console.log(hundredths,seconds,minutes)
             timer.timeList.push([milliseconds,false,false,String(scrambleNotation)]);//record time
             addToTable();//add ressult to table
             textInputBox.value = "";//empty input box
+            newScramble();
         
         }
 
